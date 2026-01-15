@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AfyaLink - Hospital Management System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        :root {
+            --medical-green: #10B981;
+            --medical-green-dark: #059669;
+            --medical-green-light: #D1FAE5;
+        }
+        
+        .sidebar-link.active {
+            background-color: var(--medical-green);
+            color: white;
+        }
+        
+        .sidebar-link:hover:not(.active) {
+            background-color: var(--medical-green-light);
+        }
+        
+        .bed-card {
+            transition: all 0.3s ease;
+        }
+        
+        .bed-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .stock-low {
+            background-color: #FEF3C7;
+        }
+        
+        .stock-critical {
+            background-color: #FEE2E2;
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #10B981;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+            <div class="flex flex-col h-full">
+                <!-- Logo -->
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                            <i data-lucide="heart-pulse" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">AfyaLink</h1>
+                            <p class="text-xs text-gray-500">Hospital Management</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin">
+                    <a href="#" onclick="navigateTo('dashboard')" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="dashboard">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" onclick="navigateTo('patients')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="patients">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                        Patient Registry
+                    </a>
+                    <a href="#" onclick="navigateTo('wards')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="wards">
+                        <i data-lucide="bed-double" class="w-5 h-5"></i>
+                        Ward/Bed Management
+                    </a>
+                    <a href="#" onclick="navigateTo('pharmacy')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="pharmacy">
+                        <i data-lucide="pill" class="w-5 h-5"></i>
+                        Pharmacy/Inventory
+                    </a>
+                    <a href="#" onclick="navigateTo('staff')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="staff">
+                        <i data-lucide="user-cog" class="w-5 h-5"></i>
+                        Staff
+                    </a>
+                    <a href="#" onclick="navigateTo('billing')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium" data-page="billing">
+                        <i data-lucide="receipt" class="w-5 h-5"></i>
+                        Billing
+                    </a>
+                </nav>
+                
+                <!-- User Info -->
+                <div class="p-4 border-t border-gray-100">
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <i data-lucide="user" class="w-5 h-5 text-emerald-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-800">Dr. Wanjiku Mwangi</p>
+                            <p class="text-xs text-gray-500">Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 lg:ml-0">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="flex items-center justify-between px-4 lg:px-8 py-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i data-lucide="menu" class="w-6 h-6 text-gray-600"></i>
+                    </button>
+                    <div class="flex-1 max-w-xl mx-4">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                            <input type="text" placeholder="Search patients, staff, medicines..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 rounded-lg hover:bg-gray-100">
+                            <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full pulse-dot"></span>
+                        </button>
+                        <div class="hidden sm:block text-right">
+                            <p class="text-sm font-medium text-gray-800" id="currentDate"></p>
+                            <p class="text-xs text-gray-500" id="currentTime"></p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <div id="pageContent" class="p-4 lg:p-8">
+                <!-- Dashboard content will be loaded here -->
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals Container -->
+    <div id="modalContainer"></div>
+
+    <script>
+        // =====================
+        // MOCK DATA (data.js equivalent)
+        // =====================
+        const mockData = {
+            patients: [
+                { id: 1, name: "John Kamau Mwangi", nationalId: "28456789", dob: "1985-03-15", gender: "Male", phone: "+254712345678", county: "Nairobi", nokName: "Mary Kamau", nokPhone: "+254723456789", insurance: "NHIF", policyNumber: "NHIF-2023-45678", bp: "120/80", temp: "36.8", weight: "72", symptoms: "Mild headache, fatigue", admissionDate: "2024-01-15", wardId: 1, bedId: 2 },
+                { id: 2, name: "Grace Wanjiru Njeri", nationalId: "31234567", dob: "1990-07-22", gender: "Female", phone: "+254734567890", county: "Kiambu", nokName: "Peter Njeri", nokPhone: "+254745678901", insurance: "Private", policyNumber: "UAP-MED-78901", bp: "118/75", temp: "37.2", weight: "65", symptoms: "Prenatal checkup", admissionDate: "2024-01-14", wardId: 2, bedId: 5 },
+                { id: 3, name: "David Ochieng Otieno", nationalId: "25678901", dob: "1978-11-08", gender: "Male", phone: "+254756789012", county: "Kisumu", nokName: "Sarah Ochieng", nokPhone: "+254767890123", insurance: "Cash", policyNumber: "", bp: "140/95", temp: "38.5", weight: "85", symptoms: "Chest pain, shortness of breath", admissionDate: "2024-01-16", wardId: 3, bedId: 9 },
+                { id: 4, name: "Faith Akinyi Odhiambo", nationalId: "33456789", dob: "2015-04-12", gender: "Female", phone: "+254778901234", county: "Nakuru", nokName: "James Odhiambo", nokPhone: "+254789012345", insurance: "NHIF", policyNumber: "NHIF-2023-56789", bp: "100/65", temp: "38.9", weight: "25", symptoms: "High fever, cough", admissionDate: "2024-01-16", wardId: 4, bedId: 13 },
+                { id: 5, name: "Samuel Kipchoge Korir", nationalId: "27890123", dob: "1982-09-30", gender: "Male", phone: "+254790123456", county: "Uasin Gishu", nokName: "Janet Korir", nokPhone: "+254701234567", insurance: "Private", policyNumber: "JUBILEE-45678", bp: "125/82", temp: "36.5", weight: "78", symptoms: "Follow-up visit", admissionDate: null, wardId: null, bedId: null },
+                { id: 6, name: "Elizabeth Njoki Karanja", nationalId: "29012345", dob: "1995-01-18", gender: "Female", phone: "+254712098765", county: "Mombasa", nokName: "Michael Karanja", nokPhone: "+254723109876", insurance: "NHIF", policyNumber: "NHIF-2024-12345", bp: "115/70", temp: "36.9", weight: "58", symptoms: "Antenatal care", admissionDate: "2024-01-15", wardId: 2, bedId: 6 },
+            ],
+            
+            wards: [
+                { id: 1, name: "General Ward", beds: [
+                    { id: 1, number: "G-01", status: "available", patientId: null },
+                    { id: 2, number: "G-02", status: "occupied", patientId: 1 },
+                    { id: 3, number: "G-03", status: "available", patientId: null },
+                    { id: 4, number: "G-04", status: "available", patientId: null },
+                ]},
+                { id: 2, name: "Maternity Ward", beds: [
+                    { id: 5, number: "M-01", status: "occupied", patientId: 2 },
+                    { id: 6, number: "M-02", status: "occupied", patientId: 6 },
+                    { id: 7, number: "M-03", status: "available", patientId: null },
+                    { id: 8, number: "M-04", status: "available", patientId: null },
+                ]},
+                { id: 3, name: "ICU", beds: [
+                    { id: 9, number: "ICU-01", status: "occupied", patientId: 3 },
+                    { id: 10, number: "ICU-02", status: "available", patientId: null },
+                    { id: 11, number: "ICU-03", status: "available", patientId: null },
+                    { id: 12, number: "ICU-04", status: "available", patientId: null },
+                ]},
+                { id: 4, name: "Paediatric Ward", beds: [
+                    { id: 13, number: "P-01", status: "occupied", patientId: 4 },
+                    { id: 14, number: "P-02", status: "available", patientId: null },
+                    { id: 15, number: "P-03", status: "available", patientId: null },
+                    { id: 16, number: "P-04", status: "available", patientId: null },
+                ]},
+                { id: 5, name: "Surgical Ward", beds: [
+                    { id: 17, number: "S-01", status: "available", patientId: null },
+                    { id: 18, number: "S-02", status: "available", patientId: null },
+                    { id: 19, number: "S-03", status: "available", patientId: null },
+                    { id: 20, number: "S-04", status: "available", patientId: null },
+                ]},
+            ],
+            
+            pharmacy: [
+                { id: 1, name: "Amoxicillin 500mg", category: "Antibiotics", stock: 150, unitPrice: 25, expiryDate: "2025-06-15" },
+                { id: 2, name: "Paracetamol 500mg", category: "Painkillers", stock: 500, unitPrice: 10, expiryDate: "2025-12-20" },
+                { id: 3, name: "Metformin 850mg", category: "Antidiabetics", stock: 12, unitPrice: 35, expiryDate: "2025-03-10" },
+                { id: 4, name: "Omeprazole 20mg", category: "Antacids", stock: 85, unitPrice: 45, expiryDate: "2024-09-30" },
+                { id: 5, name: "Cough Syrup 100ml", category: "Syrups", stock: 8, unitPrice: 180, expiryDate: "2024-08-15" },
+                { id: 6, name: "Ibuprofen 400mg", category: "Painkillers", stock: 200, unitPrice: 15, expiryDate: "2025-11-25" },
+                { id: 7, name: "Ciprofloxacin 500mg", category: "Antibiotics", stock: 18, unitPrice: 55, expiryDate: "2025-04-20" },
+                { id: 8, name: "Salbutamol Inhaler", category: "Respiratory", stock: 5, unitPrice: 850, expiryDate: "2025-02-28" },
+                { id: 9, name: "Diazepam 5mg", category: "Sedatives", stock: 45, unitPrice: 30, expiryDate: "2024-12-01" },
+                { id: 10, name: "Artemether/Lumefantrine", category: "Antimalarials", stock: 75, unitPrice: 120, expiryDate: "2025-07-10" },
+                { id: 11, name: "ORS Sachets", category: "Rehydration", stock: 300, unitPrice: 20, expiryDate: "2026-01-15" },
+                { id: 12, name: "Ferrous Sulphate 200mg", category: "Supplements", stock: 15, unitPrice: 25, expiryDate: "2025-05-30" },
+            ],
+            
+            staff: [
+                { id: 1, name: "Dr. Wanjiku Mwangi", role: "Doctor", specialty: "General Practice", shift: "On Duty", phone: "+254711223344" },
+                { id: 2, name: "Dr. Peter Omondi", role: "Doctor", specialty: "Surgeon", shift: "Off Duty", phone: "+254722334455" },
+                { id: 3, name: "Dr. Amina Hassan", role: "Doctor", specialty: "Pediatrician", shift: "On Duty", phone: "+254733445566" },
+                { id: 4, name: "Nurse Joyce Wairimu", role: "Nurse", specialty: "General", shift: "On Duty", phone: "+254744556677" },
+                { id: 5, name: "Nurse Brian Kiprop", role: "Nurse", specialty: "ICU", shift: "On Duty", phone: "+254755667788" },
+                { id: 6, name: "Nurse Catherine Achieng", role: "Nurse", specialty: "Maternity", shift: "Off Duty", phone: "+254766778899" },
+                { id: 7, name: "Samuel Maina", role: "Lab Tech", specialty: "Pathology", shift: "On Duty", phone: "+254777889900" },
+                { id: 8, name: "Lucy Wambui", role: "Admin", specialty: "Reception", shift: "On Duty", phone: "+254788990011" },
+                { id: 9, name: "Dr. Michael Ngugi", role: "Doctor", specialty: "Obstetrician", shift: "On Duty", phone: "+254799001122" },
+                { id: 10, name: "James Kimani", role: "Pharmacist", specialty: "Dispensary", shift: "On Duty", phone: "+254700112233" },
+            ],
+            
+            recentActivity: [
+                { id: 1, type: "checkin", patient: "John Kamau Mwangi", time: "08:30 AM", description: "Patient checked in for consultation" },
+                { id: 2, type: "admission", patient: "Faith Akinyi Odhiambo", time: "09:15 AM", description: "Admitted to Paediatric Ward" },
+                { id: 3, type: "discharge", patient: "Wilson Mutua", time: "10:00 AM", description: "Discharged from General Ward" },
+                { id: 4, type: "prescription", patient: "Grace Wanjiru Njeri", time: "10:45 AM", description: "Prescribed prenatal vitamins" },
+                { id: 5, type: "lab", patient: "David Ochieng Otieno", time: "11:30 AM", description: "Blood test results ready" },
+                { id: 6, type: "checkin", patient: "Elizabeth Njoki Karanja", time: "12:00 PM", description: "Antenatal care visit" },
+            ],
+            
+            billingItems: [
+                { id: 1, description: "Consultation Fee", amount: 500 },
+                { id: 2, description: "Lab Tests - Blood Work", amount: 1500 },
+                { id: 3, description: "X-Ray", amount: 2000 },
+                { id: 4, description: "Bed Charges (per day)", amount: 3000 },
+                { id: 5, description: "Nursing Care", amount: 1000 },
+            ]
+        };
+
+        // =====================
+        // STATE MANAGEMENT
+        // =====================
+        let state = {
+            currentPage: 'dashboard',
+            patients: [...mockData.patients],
+            wards: JSON.parse(JSON.stringify(mockData.wards)),
+            pharmacy: [...mockData.pharmacy],
+            staff: [...mockData.staff],
+            editingPatient: null,
+            selectedPatientForBilling: null,
+            billingCart: [],
+        };
+
+        // =====================
+        // UTILITY FUNCTIONS
+        // =====================
+        function formatCurrency(amount) {
+            return `KES ${amount.toLocaleString()}`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function calculateAge(dob) {
+            const today = new Date();
+            const birthDate = new Date(dob);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function getPatientById(id) {
+            return state.patients.find(p => p.id === id);
+        }
+
+        function getAvailableBeds() {
+            let available = 0;
+            let total = 0;
+            state.wards.forEach(ward => {
+                ward.beds.forEach(bed => {
+                    total++;
+                    if (bed.status === 'available') available++;
+                });
+            });
+            return { available, total };
+        }
+
+        function getLowStockCount() {
+            return state.pharmacy.filter(item => item.stock < 20).length;
+        }
+
+        function getDoctorsOnDuty() {
+            return state.staff.filter(s => s.role === 'Doctor' && s.shift === 'On Duty').length;
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // =====================
+        // NAVIGATION
+        // =====================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function navigateTo(page) {
+            state.currentPage = page;
+            
+            // Update active link
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Close sidebar on mobile
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth < 1024) {
+                sidebar.classList.add('-translate-x-full');
+            }
+            
+            renderPage();
+            lucide.createIcons();
+        }
+
+        function renderPage() {
+            const content = document.getElementById('pageContent');
+            
+            switch(state.currentPage) {
+                case 'dashboard':
+                    content.innerHTML = renderDashboard();
+                    break;
+                case 'patients':
+                    content.innerHTML = renderPatients();
+                    break;
+                case 'wards':
+                    content.innerHTML = renderWards();
+                    break;
+                case 'pharmacy':
+                    content.innerHTML = renderPharmacy();
+                    break;
+                case 'staff':
+                    content.innerHTML = renderStaff();
+                    break;
+                case 'billing':
+                    content.innerHTML = renderBilling();
+                    break;
+            }
+            
+            lucide.createIcons();
+        }
+
+        // =====================
+        // DASHBOARD PAGE
+        // =====================
+        function renderDashboard() {
+            const beds = getAvailableBeds();
+            const patientsToday = state.patients.filter(p => p.admissionDate === '2024-01-16').length + 2;
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
+                        <p class="text-gray-500">Welcome back! Here's what's happening today.</p>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-emerald-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Patients Today</p>
+                                    <p class="text-3xl font-bold text-gray-800">${patientsToday}</p>
+                                </div>
+                                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="users" class="w-6 h-6 text-emerald-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-emerald-600 mt-2">↑ 12% from yesterday</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Available Beds</p>
+                                    <p class="text-3xl font-bold text-gray-800">${beds.available}/${beds.total}</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="bed-double" class="w-6 h-6 text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-blue-600 mt-2">${beds.total - beds.available} beds occupied</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-amber-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Low Stock Alerts</p>
+                                    <p class="text-3xl font-bold text-gray-800">${getLowStockCount()}</p>
+                                </div>
+                                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-amber-600 mt-2">Items need restocking</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Doctors on Duty</p>
+                                    <p class="text-3xl font-bold text-gray-800">${getDoctorsOnDuty()}</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="stethoscope" class="w-6 h-6 text-purple-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-purple-600 mt-2">of ${state.staff.filter(s => s.role === 'Doctor').length} total doctors</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Recent Activity -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm">
+                            <div class="p-6 border-b border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800">Recent Activity</h3>
+                            </div>
+                            <div class="p-6 space-y-4 max-h-96 overflow-y-auto scrollbar-thin">
+                                ${mockData.recentActivity.map(activity => `
+                                    <div class="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}">
+                                            <i data-lucide="${getActivityIcon(activity.type)}" class="w-5 h-5"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="font-medium text-gray-800">${activity.patient}</p>
+                                            <p class="text-sm text-gray-500">${activity.description}</p>
+                                        </div>
+                                        <span class="text-xs text-gray-400">${activity.time}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl shadow-sm">
+                            <div class="p-6 border-b border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
+                            </div>
+                            <div class="p-6 space-y-3">
+                                <button onclick="navigateTo('patients'); setTimeout(() => showPatientForm(), 100);" class="w-full flex items-center gap-3 p-4 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors text-left">
+                                    <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="user-plus" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Register Patient</p>
+                                        <p class="text-xs text-gray-500">Add new patient record</p>
+                                    </div>
+                                </button>
+                                
+                                <button onclick="navigateTo('billing')" class="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-left">
+                                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Create Invoice</p>
+                                        <p class="text-xs text-gray-500">Generate patient bill</p>
+                                    </div>
+                                </button>
+                                
+                                <button onclick="navigateTo('pharmacy')" class="w-full flex items-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors text-left">
+                                    <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="pill" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Dispense Medicine</p>
+                                        <p class="text-xs text-gray-500">Process prescription</p>
+                                    </div>
+                                </button>
+                                
+                                <button onclick="navigateTo('wards')" class="w-full flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors text-left">
+                                    <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="bed" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-800">Admit Patient</p>
+                                        <p class="text-xs text-gray-500">Assign bed to patient</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Low Stock Alert -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="alert-circle" class="w-6 h-6 text-amber-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-amber-800">Low Stock Alert</h4>
+                                <p class="text-sm text-amber-700 mt-1">The following items are running low and need to be restocked:</p>
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    ${state.pharmacy.filter(item => item.stock < 20).map(item => `
+                                        <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">${item.name} (${item.stock} units)</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <button onclick="navigateTo('pharmacy')" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium">
+                                View Inventory
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getActivityIcon(type) {
+            const icons = {
+                checkin: 'log-in',
+                admission: 'bed',
+                discharge: 'log-out',
+                prescription: 'file-text',
+                lab: 'flask-conical'
+            };
+            return icons[type] || 'activity';
+        }
+
+        function getActivityColor(type) {
+            const colors = {
+                checkin: 'bg-emerald-100 text-emerald-600',
+                admission: 'bg-blue-100 text-blue-600',
+                discharge: 'bg-purple-100 text-purple-600',
+                prescription: 'bg-amber-100 text-amber-600',
+                lab: 'bg-pink-100 text-pink-600'
+            };
+            return colors[type] || 'bg-gray-100 text-gray-600';
+        }
+
+        // =====================
+        // PATIENTS PAGE
+        // =====================
+        function renderPatients() {
+            return `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Patient Registry</h2>
+                            <p class="text-gray-500">Manage patient records and information</p>
+                        </div>
+                        <button onclick="showPatientForm()" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            Add New Patient
+                        </button>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="bg-white rounded-xl shadow-sm p-4">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-1 relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                                <input type="text" id="patientSearch" oninput="filterPatients()" placeholder="Search by name, ID, or phone..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <select id="insuranceFilter" onchange="filterPatients()" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">All Insurance Types</option>
+                                <option value="Cash">Cash</option>
+                                <option value="NHIF">NHIF</option>
+                                <option value="Private">Private Insurer</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Patient Table -->
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Number</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Insurance</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="patientTableBody" class="divide-y divide-gray-100">
+                                    ${renderPatientRows(state.patients)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPatientRows(patients) {
+            return patients.map(patient => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <span class="text-emerald-700 font-semibold">${patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">${patient.name}</p>
+                                <p class="text-sm text-gray-500">${patient.gender}, ${calculateAge(patient.dob)} years</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">${patient.nationalId}</td>
+                    <td class="px-6 py-4">
+                        <p class="text-gray-800">${patient.phone}</p>
+                        <p class="text-sm text-gray-500">${patient.county}</p>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getInsuranceBadge(patient.insurance)}">
+                            ${patient.insurance}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        ${patient.wardId ? 
+                            `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                Admitted
+                            </span>` :
+                            `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                Outpatient
+                            </span>`
+                        }
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <button onclick="viewPatient(${patient.id})" class="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="View">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editPatient(${patient.id})" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getInsuranceBadge(insurance) {
+            const badges = {
+                'Cash': 'bg-gray-100 text-gray-800',
+                'NHIF': 'bg-emerald-100 text-emerald-800',
+                'Private': 'bg-purple-100 text-purple-800'
+            };
+            return badges[insurance] || 'bg-gray-100 text-gray-800';
+        }
+
+        function filterPatients() {
+            const search = document.getElementById('patientSearch').value.toLowerCase();
+            const insurance = document.getElementById('insuranceFilter').value;
+            
+            let filtered = state.patients.filter(patient => {
+                const matchesSearch = patient.name.toLowerCase().includes(search) ||
+                                     patient.nationalId.includes(search) ||
+                                     patient.phone.includes(search);
+                const matchesInsurance = !insurance || patient.insurance === insurance;
+                return matchesSearch && matchesInsurance;
+            });
+            
+            document.getElementById('patientTableBody').innerHTML = renderPatientRows(filtered);
+            lucide.createIcons();
+        }
+
+        function showPatientForm(patient = null) {
+            state.editingPatient = patient;
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-gray-800">${patient ? 'Edit Patient' : 'Register New Patient'}</h3>
+                            <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                            </button>
+                        </div>
+                        <form onsubmit="savePatient(event)" class="p-6 space-y-6">
+                            <!-- Personal Information -->
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i data-lucide="user" class="w-5 h-5 text-emerald-600"></i>
+                                    Personal Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                        <input type="text" name="name" value="${patient?.name || ''}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">National ID *</label>
+                                        <input type="text" name="nationalId" value="${patient?.nationalId || ''}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                                        <input type="date" name="dob" value="${patient?.dob || ''}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                                        <select name="gender" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male" ${patient?.gender === 'Male' ? 'selected' : ''}>Male</option>
+                                            <option value="Female" ${patient?.gender === 'Female' ? 'selected' : ''}>Female</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                                        <input type="tel" name="phone" value="${patient?.phone || '+254'}" placeholder="+254712345678" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">County of Residence *</label>
+                                        <select name="county" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="">Select County</option>
+                                            ${['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu', 'Uasin Gishu', 'Machakos', 'Kajiado', 'Nyeri', 'Meru'].map(county => 
+                                                `<option value="${county}" ${patient?.county === county ? 'selected' : ''}>${county}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Next of Kin -->
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i data-lucide="users" class="w-5 h-5 text-emerald-600"></i>
+                                    Next of Kin
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                        <input type="text" name="nokName" value="${patient?.nokName || ''}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                                        <input type="tel" name="nokPhone" value="${patient?.nokPhone || '+254'}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Insurance -->
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>
+                                    Insurance Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Insurance Type *</label>
+                                        <select name="insurance" id="insuranceType" onchange="togglePolicyNumber()" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="Cash" ${patient?.insurance === 'Cash' ? 'selected' : ''}>Cash</option>
+                                            <option value="NHIF" ${patient?.insurance === 'NHIF' ? 'selected' : ''}>NHIF</option>
+                                            <option value="Private" ${patient?.insurance === 'Private' ? 'selected' : ''}>Private Insurer</option>
+                                        </select>
+                                    </div>
+                                    <div id="policyNumberField" class="${patient?.insurance === 'Cash' || !patient ? 'hidden' : ''}">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Policy Number</label>
+                                        <input type="text" name="policyNumber" value="${patient?.policyNumber || ''}" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Triage -->
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i data-lucide="activity" class="w-5 h-5 text-emerald-600"></i>
+                                    Triage Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Blood Pressure</label>
+                                        <input type="text" name="bp" value="${patient?.bp || ''}" placeholder="120/80" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Temperature (°C)</label>
+                                        <input type="number" step="0.1" name="temp" value="${patient?.temp || ''}" placeholder="36.5" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                                        <input type="number" step="0.1" name="weight" value="${patient?.weight || ''}" placeholder="70" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Symptoms / Chief Complaint</label>
+                                    <textarea name="symptoms" rows="3" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">${patient?.symptoms || ''}</textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                <button type="button" onclick="closeModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                    ${patient ? 'Update Patient' : 'Register Patient'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+        }
+
+        function togglePolicyNumber() {
+            const insurance = document.getElementById('insuranceType').value;
+            const policyField = document.getElementById('policyNumberField');
+            if (insurance === 'Cash') {
+                policyField.classList.add('hidden');
+            } else {
+                policyField.classList.remove('hidden');
+            }
+        }
+
+        function savePatient(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const patientData = {
+                name: formData.get('name'),
+                nationalId: formData.get('nationalId'),
+                dob: formData.get('dob'),
+                gender: formData.get('gender'),
+                phone: formData.get('phone'),
+                county: formData.get('county'),
+                nokName: formData.get('nokName'),
+                nokPhone: formData.get('nokPhone'),
+                insurance: formData.get('insurance'),
+                policyNumber: formData.get('policyNumber') || '',
+                bp: formData.get('bp'),
+                temp: formData.get('temp'),
+                weight: formData.get('weight'),
+                symptoms: formData.get('symptoms'),
+                admissionDate: null,
+                wardId: null,
+                bedId: null
+            };
+            
+            if (state.editingPatient) {
+                const index = state.patients.findIndex(p => p.id === state.editingPatient.id);
+                state.patients[index] = { ...state.patients[index], ...patientData };
+            } else {
+                patientData.id = state.patients.length + 1;
+                state.patients.push(patientData);
+            }
+            
+            closeModal();
+            renderPage();
+        }
+
+        function editPatient(id) {
+            const patient = getPatientById(id);
+            showPatientForm(patient);
+        }
+
+        function viewPatient(id) {
+            const patient = getPatientById(id);
+            const ward = state.wards.find(w => w.id === patient.wardId);
+            const bed = ward?.beds.find(b => b.id === patient.bedId);
+            
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="sticky top-0 bg-emerald-500 px-6 py-6 rounded-t-2xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                                        <span class="text-2xl font-bold text-emerald-600">${patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                                    </div>
+                                    <div class="text-white">
+                                        <h3 class="text-xl font-bold">${patient.name}</h3>
+                                        <p class="text-emerald-100">${patient.gender}, ${calculateAge(patient.dob)} years old</p>
+                                    </div>
+                                </div>
+                                <button onclick="closeModal()" class="p-2 hover:bg-emerald-400 rounded-lg transition-colors">
+                                    <i data-lucide="x" class="w-5 h-5 text-white"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-500 uppercase">National ID</p>
+                                    <p class="font-semibold text-gray-800">${patient.nationalId}</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-500 uppercase">Phone</p>
+                                    <p class="font-semibold text-gray-800">${patient.phone}</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-500 uppercase">County</p>
+                                    <p class="font-semibold text-gray-800">${patient.county}</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-500 uppercase">Insurance</p>
+                                    <p class="font-semibold text-gray-800">${patient.insurance}${patient.policyNumber ? ` (${patient.policyNumber})` : ''}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-100 pt-4">
+                                <h4 class="font-semibold text-gray-800 mb-3">Next of Kin</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="p-4 bg-gray-50 rounded-lg">
+                                        <p class="text-xs text-gray-500 uppercase">Name</p>
+                                        <p class="font-semibold text-gray-800">${patient.nokName}</p>
+                                    </div>
+                                    <div class="p-4 bg-gray-50 rounded-lg">
+                                        <p class="text-xs text-gray-500 uppercase">Phone</p>
+                                        <p class="font-semibold text-gray-800">${patient.nokPhone}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-100 pt-4">
+                                <h4 class="font-semibold text-gray-800 mb-3">Vitals & Triage</h4>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="text-center p-4 bg-red-50 rounded-lg">
+                                        <i data-lucide="heart" class="w-6 h-6 text-red-500 mx-auto mb-2"></i>
+                                        <p class="text-xs text-gray-500">Blood Pressure</p>
+                                        <p class="font-bold text-gray-800">${patient.bp || '-'}</p>
+                                    </div>
+                                    <div class="text-center p-4 bg-orange-50 rounded-lg">
+                                        <i data-lucide="thermometer" class="w-6 h-6 text-orange-500 mx-auto mb-2"></i>
+                                        <p class="text-xs text-gray-500">Temperature</p>
+                                        <p class="font-bold text-gray-800">${patient.temp ? patient.temp + '°C' : '-'}</p>
+                                    </div>
+                                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                        <i data-lucide="scale" class="w-6 h-6 text-blue-500 mx-auto mb-2"></i>
+                                        <p class="text-xs text-gray-500">Weight</p>
+                                        <p class="font-bold text-gray-800">${patient.weight ? patient.weight + ' kg' : '-'}</p>
+                                    </div>
+                                </div>
+                                ${patient.symptoms ? `
+                                    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                                        <p class="text-xs text-gray-500 uppercase mb-1">Symptoms</p>
+                                        <p class="text-gray-800">${patient.symptoms}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            ${patient.wardId ? `
+                                <div class="border-t border-gray-100 pt-4">
+                                    <h4 class="font-semibold text-gray-800 mb-3">Admission Details</h4>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="p-4 bg-blue-50 rounded-lg">
+                                            <p class="text-xs text-gray-500 uppercase">Ward</p>
+                                            <p class="font-semibold text-gray-800">${ward?.name || '-'}</p>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg">
+                                            <p class="text-xs text-gray-500 uppercase">Bed Number</p>
+                                            <p class="font-semibold text-gray-800">${bed?.number || '-'}</p>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg">
+                                            <p class="text-xs text-gray-500 uppercase">Admission Date</p>
+                                            <p class="font-semibold text-gray-800">${formatDate(patient.admissionDate)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+        }
+
+        // =====================
+        // WARDS PAGE
+        // =====================
+        function renderWards() {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Ward & Bed Management</h2>
+                        <p class="text-gray-500">Monitor bed availability across all wards</p>
+                    </div>
+                    
+                    <!-- Ward Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        ${state.wards.map(ward => {
+                            const available = ward.beds.filter(b => b.status === 'available').length;
+                            return `
+                                <div class="bg-white rounded-xl shadow-sm p-4">
+                                    <p class="text-sm text-gray-500">${ward.name}</p>
+                                    <p class="text-2xl font-bold text-gray-800">${available}/${ward.beds.length}</p>
+                                    <p class="text-xs text-emerald-600">beds available</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <!-- Wards Grid -->
+                    ${state.wards.map(ward => `
+                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold text-gray-800">${ward.name}</h3>
+                                    <div class="flex items-center gap-4 text-sm">
+                                        <span class="flex items-center gap-2">
+                                            <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                                            Available
+                                        </span>
+                                        <span class="flex items-center gap-2">
+                                            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                                            Occupied
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    ${ward.beds.map(bed => {
+                                        const patient = bed.patientId ? getPatientById(bed.patientId) : null;
+                                        return `
+                                            <div class="bed-card ${bed.status === 'available' ? 'bg-emerald-50 border-2 border-emerald-200' : 'bg-red-50 border-2 border-red-200'} rounded-xl p-4">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <span class="text-lg font-bold ${bed.status === 'available' ? 'text-emerald-700' : 'text-red-700'}">${bed.number}</span>
+                                                    <i data-lucide="bed" class="w-5 h-5 ${bed.status === 'available' ? 'text-emerald-500' : 'text-red-500'}"></i>
+                                                </div>
+                                                ${patient ? `
+                                                    <p class="text-sm font-medium text-gray-800 truncate">${patient.name}</p>
+                                                    <p class="text-xs text-gray-500">Since ${formatDate(patient.admissionDate)}</p>
+                                                    <button onclick="dischargeBed(${ward.id}, ${bed.id})" class="mt-3 w-full px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors">
+                                                        Discharge
+                                                    </button>
+                                                ` : `
+                                                    <p class="text-sm text-emerald-600">Available</p>
+                                                    <button onclick="showAssignPatientModal(${ward.id}, ${bed.id})" class="mt-3 w-full px-3 py-1.5 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-colors">
+                                                        Assign Patient
+                                                    </button>
+                                                `}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function showAssignPatientModal(wardId, bedId) {
+            const availablePatients = state.patients.filter(p => !p.wardId);
+            const ward = state.wards.find(w => w.id === wardId);
+            const bed = ward.beds.find(b => b.id === bedId);
+            
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+                        <div class="px-6 py-4 border-b border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-800">Assign Patient to Bed ${bed.number}</h3>
+                            <p class="text-sm text-gray-500">${ward.name}</p>
+                        </div>
+                        <div class="p-6">
+                            ${availablePatients.length > 0 ? `
+                                <div class="space-y-3 max-h-80 overflow-y-auto">
+                                    ${availablePatients.map(patient => `
+                                        <button onclick="assignPatientToBed(${patient.id}, ${wardId}, ${bedId})" class="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 transition-colors text-left">
+                                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                                <span class="text-emerald-700 font-semibold">${patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-800">${patient.name}</p>
+                                                <p class="text-sm text-gray-500">${patient.gender}, ${calculateAge(patient.dob)} years</p>
+                                            </div>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <div class="text-center py-8">
+                                    <i data-lucide="users" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+                                    <p class="text-gray-500">No outpatients available for admission</p>
+                                </div>
+                            `}
+                        </div>
+                        <div class="px-6 py-4 border-t border-gray-100">
+                            <button onclick="closeModal()" class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+        }
+
+        function assignPatientToBed(patientId, wardId, bedId) {
+            const patient = getPatientById(patientId);
+            patient.wardId = wardId;
+            patient.bedId = bedId;
+            patient.admissionDate = new Date().toISOString().split('T')[0];
+            
+            const ward = state.wards.find(w => w.id === wardId);
+            const bed = ward.beds.find(b => b.id === bedId);
+            bed.status = 'occupied';
+            bed.patientId = patientId;
+            
+            closeModal();
+            renderPage();
+        }
+
+        function dischargeBed(wardId, bedId) {
+            const ward = state.wards.find(w => w.id === wardId);
+            const bed = ward.beds.find(b => b.id === bedId);
+            const patient = getPatientById(bed.patientId);
+            
+            if (patient) {
+                patient.wardId = null;
+                patient.bedId = null;
+                patient.admissionDate = null;
+            }
+            
+            bed.status = 'available';
+            bed.patientId = null;
+            
+            renderPage();
+        }
+
+        // =====================
+        // PHARMACY PAGE
+        // =====================
+        function renderPharmacy() {
+            return `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Pharmacy & Inventory</h2>
+                            <p class="text-gray-500">Manage medicine stock and dispensing</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="showAddMedicineModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                                Add Medicine
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl shadow-sm p-4">
+                            <p class="text-sm text-gray-500">Total Items</p>
+                            <p class="text-2xl font-bold text-gray-800">${state.pharmacy.length}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4">
+                            <p class="text-sm text-gray-500">Low Stock</p>
+                            <p class="text-2xl font-bold text-amber-600">${state.pharmacy.filter(i => i.stock < 20 && i.stock >= 10).length}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4">
+                            <p class="text-sm text-gray-500">Critical Stock</p>
+                            <p class="text-2xl font-bold text-red-600">${state.pharmacy.filter(i => i.stock < 10).length}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4">
+                            <p class="text-sm text-gray-500">Total Value</p>
+                            <p class="text-2xl font-bold text-emerald-600">${formatCurrency(state.pharmacy.reduce((sum, i) => sum + (i.stock * i.unitPrice), 0))}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="bg-white rounded-xl shadow-sm p-4">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-1 relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                                <input type="text" id="pharmacySearch" oninput="filterPharmacy()" placeholder="Search medicines..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <select id="categoryFilter" onchange="filterPharmacy()" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="">All Categories</option>
+                                ${[...new Set(state.pharmacy.map(i => i.category))].map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Table -->
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Medicine</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Unit Price</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiry Date</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pharmacyTableBody" class="divide-y divide-gray-100">
+                                    ${renderPharmacyRows(state.pharmacy)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPharmacyRows(items) {
+            return items.map(item => {
+                let rowClass = '';
+                let stockBadge = '';
+                if (item.stock < 10) {
+                    rowClass = 'stock-critical';
+                    stockBadge = '<span class="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">Critical</span>';
+                } else if (item.stock < 20) {
+                    rowClass = 'stock-low';
+                    stockBadge = '<span class="ml-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">Low</span>';
+                }
+                
+                return `
+                    <tr class="${rowClass} hover:bg-opacity-75 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="pill" class="w-5 h-5 text-emerald-600"></i>
+                                </div>
+                                <span class="font-medium text-gray-800">${item.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-0.5 bg-gray-100 text-gray-800 rounded-full text-sm">${item.category}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-gray-800">${item.stock}</span> units
+                            ${stockBadge}
+                        </td>
+                        <td class="px-6 py-4 text-gray-800">${formatCurrency(item.unitPrice)}</td>
+                        <td class="px-6 py-4 text-gray-600">${formatDate(item.expiryDate)}</td>
+                        <td class="px-6 py-4">
+                            <button onclick="showDispenseModal(${item.id})" class="px-4 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-colors">
+                                Dispense
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterPharmacy() {
+            const search = document.getElementById('pharmacySearch').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            
+            let filtered = state.pharmacy.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(search);
+                const matchesCategory = !category || item.category === category;
+                return matchesSearch && matchesCategory;
+            });
+            
+            document.getElementById('pharmacyTableBody').innerHTML = renderPharmacyRows(filtered);
+            lucide.createIcons();
+        }
+
+        function showDispenseModal(itemId) {
+            const item = state.pharmacy.find(i => i.id === itemId);
+            
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+                        <div class="px-6 py-4 border-b border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-800">Dispense Medicine</h3>
+                        </div>
+                        <form onsubmit="dispenseMedicine(event, ${itemId})" class="p-6 space-y-4">
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <p class="font-semibold text-gray-800">${item.name}</p>
+                                <p class="text-sm text-gray-500">Available: ${item.stock} units | ${formatCurrency(item.unitPrice)} per unit</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Patient</label>
+                                <select name="patientId" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="">Select Patient</option>
+                                    ${state.patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input type="number" name="quantity" min="1" max="${item.stock}" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            
+                            <div class="flex gap-3 pt-4">
+                                <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                    Dispense
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+        }
+
+        function dispenseMedicine(event, itemId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const quantity = parseInt(formData.get('quantity'));
+            
+            const item = state.pharmacy.find(i => i.id === itemId);
+            if (item && quantity <= item.stock) {
+                item.stock -= quantity;
+                closeModal();
+                renderPage();
+            }
+        }
+
+        function showAddMedicineModal() {
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+                        <div class="px-6 py-4 border-b border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-800">Add New Medicine</h3>
+                        </div>
+                        <form onsubmit="addMedicine(event)" class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Medicine Name</label>
+                                <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select name="category" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="Antibiotics">Antibiotics</option>
+                                    <option value="Painkillers">Painkillers</option>
+                                    <option value="Syrups">Syrups</option>
+                                    <option value="Antidiabetics">Antidiabetics</option>
+                                    <option value="Antacids">Antacids</option>
+                                    <option value="Antimalarials">Antimalarials</option>
+                                    <option value="Supplements">Supplements</option>
+                                    <option value="Respiratory">Respiratory</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                                    <input type="number" name="stock" min="1" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price (KES)</label>
+                                    <input type="number" name="unitPrice" min="1" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                                <input type="date" name="expiryDate" required class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div class="flex gap-3 pt-4">
+                                <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                    Add Medicine
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+        }
+
+        function addMedicine(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const newMedicine = {
+                id: state.pharmacy.length + 1,
+                name: formData.get('name'),
+                category: formData.get('category'),
+                stock: parseInt(formData.get('stock')),
+                unitPrice: parseInt(formData.get('unitPrice')),
+                expiryDate: formData.get('expiryDate')
+            };
+            
+            state.pharmacy.push(newMedicine);
+            closeModal();
+            renderPage();
+        }
+
+        // =====================
+        // STAFF PAGE
+        // =====================
+        function renderStaff() {
+            const roles = ['Doctor', 'Nurse', 'Lab Tech', 'Admin', 'Pharmacist'];
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Staff Management</h2>
+                        <p class="text-gray-500">Manage hospital staff and schedules</p>
+                    </div>
+                    
+                    <!-- Staff Summary -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        ${roles.map(role => {
+                            const count = state.staff.filter(s => s.role === role).length;
+                            const onDuty = state.staff.filter(s => s.role === role && s.shift === 'On Duty').length;
+                            return `
+                                <div class="bg-white rounded-xl shadow-sm p-4">
+                                    <p class="text-sm text-gray-500">${role}s</p>
+                                    <p class="text-2xl font-bold text-gray-800">${count}</p>
+                                    <p class="text-xs text-emerald-600">${onDuty} on duty</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <!-- Staff Table -->
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Staff Member</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Specialty</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Shift Status</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    ${state.staff.map(staff => `
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 ${getRoleBgColor(staff.role)} rounded-full flex items-center justify-center">
+                                                        <i data-lucide="${getRoleIcon(staff.role)}" class="w-5 h-5 ${getRoleTextColor(staff.role)}"></i>
+                                                    </div>
+                                                    <span class="font-medium text-gray-800">${staff.name}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span class="px-2.5 py-0.5 ${getRoleBadgeColor(staff.role)} rounded-full text-sm">${staff.role}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-gray-600">${staff.specialty}</td>
+                                            <td class="px-6 py-4">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${staff.shift === 'On Duty' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'}">
+                                                    <span class="w-2 h-2 ${staff.shift === 'On Duty' ? 'bg-emerald-500' : 'bg-gray-400'} rounded-full"></span>
+                                                    ${staff.shift}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-gray-600">${staff.phone}</td>
+                                            <td class="px-6 py-4">
+                                                <button onclick="toggleShift(${staff.id})" class="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors">
+                                                    Toggle Shift
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getRoleIcon(role) {
+            const icons = {
+                'Doctor': 'stethoscope',
+                'Nurse': 'heart-pulse',
+                'Lab Tech': 'flask-conical',
+                'Admin': 'clipboard-list',
+                'Pharmacist': 'pill'
+            };
+            return icons[role] || 'user';
+        }
+
+        function getRoleBgColor(role) {
+            const colors = {
+                'Doctor': 'bg-blue-100',
+                'Nurse': 'bg-pink-100',
+                'Lab Tech': 'bg-purple-100',
+                'Admin': 'bg-amber-100',
+                'Pharmacist': 'bg-emerald-100'
+            };
+            return colors[role] || 'bg-gray-100';
+        }
+
+        function getRoleTextColor(role) {
+            const colors = {
+                'Doctor': 'text-blue-600',
+                'Nurse': 'text-pink-600',
+                'Lab Tech': 'text-purple-600',
+                'Admin': 'text-amber-600',
+                'Pharmacist': 'text-emerald-600'
+            };
+            return colors[role] || 'text-gray-600';
+        }
+
+        function getRoleBadgeColor(role) {
+            const colors = {
+                'Doctor': 'bg-blue-100 text-blue-800',
+                'Nurse': 'bg-pink-100 text-pink-800',
+                'Lab Tech': 'bg-purple-100 text-purple-800',
+                'Admin': 'bg-amber-100 text-amber-800',
+                'Pharmacist': 'bg-emerald-100 text-emerald-800'
+            };
+            return colors[role] || 'bg-gray-100 text-gray-800';
+        }
+
+        function toggleShift(staffId) {
+            const staff = state.staff.find(s => s.id === staffId);
+            if (staff) {
+                staff.shift = staff.shift === 'On Duty' ? 'Off Duty' : 'On Duty';
+                renderPage();
+            }
+        }
+
+        // =====================
+        // BILLING PAGE
+        // =====================
+        function renderBilling() {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Billing & Invoices</h2>
+                        <p class="text-gray-500">Generate invoices and manage payments</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Invoice Generator -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm">
+                            <div class="px-6 py-4 border-b border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800">Create New Invoice</h3>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <!-- Patient Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Patient</label>
+                                    <select id="billingPatient" onchange="updateBillingPatient()" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <option value="">Select a patient</option>
+                                        ${state.patients.map(p => `<option value="${p.id}">${p.name} - ${p.nationalId}</option>`).join('')}
+                                    </select>
+                                </div>
+                                
+                                <!-- Add Items -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Add Service/Item</label>
+                                    <div class="flex gap-2">
+                                        <select id="billingItemSelect" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <optgroup label="Services">
+                                                ${mockData.billingItems.map(item => `<option value="service-${item.id}">${item.description} - ${formatCurrency(item.amount)}</option>`).join('')}
+                                            </optgroup>
+                                            <optgroup label="Medicines">
+                                                ${state.pharmacy.map(item => `<option value="medicine-${item.id}">${item.name} - ${formatCurrency(item.unitPrice)}</option>`).join('')}
+                                            </optgroup>
+                                        </select>
+                                        <input type="number" id="billingQty" value="1" min="1" class="w-20 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <button onclick="addBillingItem()" class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                            <i data-lucide="plus" class="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Cart -->
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Item</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600">Qty</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600">Amount</th>
+                                                <th class="px-4 py-3 w-10"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="billingCart" class="divide-y divide-gray-100">
+                                            ${state.billingCart.length === 0 ? `
+                                                <tr>
+                                                    <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+                                                        No items added yet
+                                                    </td>
+                                                </tr>
+                                            ` : renderBillingCart()}
+                                        </tbody>
+                                        <tfoot class="bg-gray-50">
+                                            <tr>
+                                                <td colspan="2" class="px-4 py-3 text-right font-semibold text-gray-700">Total:</td>
+                                                <td class="px-4 py-3 text-right font-bold text-xl text-emerald-600" id="billingTotal">${formatCurrency(calculateBillingTotal())}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <!-- Payment Method -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                                        <select id="paymentMethod" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <option value="Cash">Cash</option>
+                                            <option value="M-Pesa">M-Pesa</option>
+                                            <option value="Insurance">Insurance</option>
+                                        </select>
+                                    </div>
+                                    <div id="mpesaField" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">M-Pesa Transaction Code</label>
+                                        <input type="text" placeholder="e.g., QJ5X2RN7KT" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                </div>
+                                
+                                <div class="flex gap-3">
+                                    <button onclick="clearBilling()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                        Clear
+                                    </button>
+                                    <button onclick="generateInvoice()" class="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
+                                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                                        Generate Invoice
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions & Info -->
+                        <div class="space-y-6">
+                            <!-- Patient Info Card -->
+                            <div id="billingPatientInfo" class="bg-white rounded-xl shadow-sm p-6">
+                                <div class="text-center py-8 text-gray-400">
+                                    <i data-lucide="user" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>Select a patient to view details</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Fee Schedule -->
+                            <div class="bg-white rounded-xl shadow-sm">
+                                <div class="px-6 py-4 border-b border-gray-100">
+                                    <h3 class="text-lg font-semibold text-gray-800">Standard Fees</h3>
+                                </div>
+                                <div class="p-4 space-y-2">
+                                    ${mockData.billingItems.map(item => `
+                                        <div class="flex justify-between text-sm py-2 border-b border-gray-50">
+                                            <span class="text-gray-600">${item.description}</span>
+                                            <span class="font-medium text-gray-800">${formatCurrency(item.amount)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBillingCart() {
+            return state.billingCart.map((item, index) => `
+                <tr>
+                    <td class="px-4 py-3 text-gray-800">${item.name}</td>
+                    <td class="px-4 py-3 text-center text-gray-600">${item.qty}</td>
+                    <td class="px-4 py-3 text-right font-medium text-gray-800">${formatCurrency(item.amount * item.qty)}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="removeBillingItem(${index})" class="p-1 text-red-500 hover:bg-red-50 rounded transition-colors">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function calculateBillingTotal() {
+            return state.billingCart.reduce((sum, item) => sum + (item.amount * item.qty), 0);
+        }
+
+        function updateBillingPatient() {
+            const patientId = document.getElementById('billingPatient').value;
+            const infoDiv = document.getElementById('billingPatientInfo');
+            
+            if (patientId) {
+                const patient = getPatientById(parseInt(patientId));
+                state.selectedPatientForBilling = patient;
+                
+                infoDiv.innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                            <span class="text-emerald-700 font-bold">${patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${patient.name}</p>
+                            <p class="text-sm text-gray-500">${patient.nationalId}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Insurance:</span>
+                            <span class="font-medium text-gray-800">${patient.insurance}</span>
+                        </div>
+                        ${patient.policyNumber ? `
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Policy No:</span>
+                                <span class="font-medium text-gray-800">${patient.policyNumber}</span>
+                            </div>
+                        ` : ''}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Phone:</span>
+                            <span class="font-medium text-gray-800">${patient.phone}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                state.selectedPatientForBilling = null;
+                infoDiv.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i data-lucide="user" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                        <p>Select a patient to view details</p>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function addBillingItem() {
+            const select = document.getElementById('billingItemSelect');
+            const qty = parseInt(document.getElementById('billingQty').value) || 1;
+            const [type, id] = select.value.split('-');
+            
+            let item;
+            if (type === 'service') {
+                const service = mockData.billingItems.find(i => i.id === parseInt(id));
+                item = { name: service.description, amount: service.amount, qty };
+            } else {
+                const medicine = state.pharmacy.find(i => i.id === parseInt(id));
+                item = { name: medicine.name, amount: medicine.unitPrice, qty };
+            }
+            
+            state.billingCart.push(item);
+            updateBillingUI();
+        }
+
+        function removeBillingItem(index) {
+            state.billingCart.splice(index, 1);
+            updateBillingUI();
+        }
+
+        function updateBillingUI() {
+            const cartBody = document.getElementById('billingCart');
+            const totalEl = document.getElementById('billingTotal');
+            
+            if (state.billingCart.length === 0) {
+                cartBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+                            No items added yet
+                        </td>
+                    </tr>
+                `;
+            } else {
+                cartBody.innerHTML = renderBillingCart();
+            }
+            
+            totalEl.textContent = formatCurrency(calculateBillingTotal());
+            lucide.createIcons();
+        }
+
+        function clearBilling() {
+            state.billingCart = [];
+            state.selectedPatientForBilling = null;
+            document.getElementById('billingPatient').value = '';
+            updateBillingPatient();
+            updateBillingUI();
+        }
+
+        function generateInvoice() {
+            if (!state.selectedPatientForBilling) {
+                alert('Please select a patient');
+                return;
+            }
+            if (state.billingCart.length === 0) {
+                alert('Please add items to the invoice');
+                return;
+            }
+            
+            const patient = state.selectedPatientForBilling;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const invoiceNo = 'INV-' + Date.now().toString().slice(-8);
+            
+            const modal = `
+                <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4" onclick="closeModal(event)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="p-8">
+                            <!-- Header -->
+                            <div class="flex justify-between items-start mb-8">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center">
+                                        <i data-lucide="heart-pulse" class="w-7 h-7 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-gray-800">AfyaLink</h1>
+                                        <p class="text-sm text-gray-500">Hospital Management System</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-gray-800">INVOICE</p>
+                                    <p class="text-sm text-gray-500">${invoiceNo}</p>
+                                    <p class="text-sm text-gray-500">${new Date().toLocaleDateString('en-KE')}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Patient Info -->
+                            <div class="grid grid-cols-2 gap-8 mb-8 p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase mb-1">Bill To</p>
+                                    <p class="font-semibold text-gray-800">${patient.name}</p>
+                                    <p class="text-sm text-gray-600">ID: ${patient.nationalId}</p>
+                                    <p class="text-sm text-gray-600">${patient.phone}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase mb-1">Payment Details</p>
+                                    <p class="font-semibold text-gray-800">${paymentMethod}</p>
+                                    <p class="text-sm text-gray-600">Insurance: ${patient.insurance}</p>
+                                    ${patient.policyNumber ? `<p class="text-sm text-gray-600">Policy: ${patient.policyNumber}</p>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Items Table -->
+                            <table class="w-full mb-8">
+                                <thead>
+                                    <tr class="border-b-2 border-gray-200">
+                                        <th class="py-3 text-left text-sm font-semibold text-gray-600">Description</th>
+                                        <th class="py-3 text-center text-sm font-semibold text-gray-600">Qty</th>
+                                        <th class="py-3 text-right text-sm font-semibold text-gray-600">Unit Price</th>
+                                        <th class="py-3 text-right text-sm font-semibold text-gray-600">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.billingCart.map(item => `
+                                        <tr class="border-b border-gray-100">
+                                            <td class="py-3 text-gray-800">${item.name}</td>
+                                            <td class="py-3 text-center text-gray-600">${item.qty}</td>
+                                            <td class="py-3 text-right text-gray-600">${formatCurrency(item.amount)}</td>
+                                            <td class="py-3 text-right font-medium text-gray-800">${formatCurrency(item.amount * item.qty)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="border-t-2 border-gray-200">
+                                        <td colspan="3" class="py-4 text-right font-semibold text-gray-700">Total Amount:</td>
+                                        <td class="py-4 text-right text-2xl font-bold text-emerald-600">${formatCurrency(calculateBillingTotal())}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            
+                            <!-- Footer -->
+                            <div class="text-center text-sm text-gray-500 border-t border-gray-100 pt-4">
+                                <p>Thank you for choosing AfyaLink Hospital</p>
+                                <p>For inquiries, call: +254 700 123 456 | Email: info@afyalink.co.ke</p>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex gap-3 mt-6">
+                                <button onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Close
+                                </button>
+                                <button onclick="window.print()" class="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
+                                    <i data-lucide="printer" class="w-5 h-5"></i>
+                                    Print Invoice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContainer').innerHTML = modal;
+            lucide.createIcons();
+            
+            // Clear billing after generating invoice
+            state.billingCart = [];
+        }
+
+        // =====================
+        // MODAL HELPERS
+        // =====================
+        function closeModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('modalContainer').innerHTML = '';
+                state.editingPatient = null;
+            }
+        }
+
+        // =====================
+        // INITIALIZATION
+        // =====================
+        function init() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            renderPage();
+            lucide.createIcons();
+            
+            // Payment method toggle
+            document.addEventListener('change', function(e) {
+                if (e.target.id === 'paymentMethod') {
+                    const mpesaField = document.getElementById('mpesaField');
+                    if (mpesaField) {
+                        mpesaField.classList.toggle('hidden', e.target.value !== 'M-Pesa');
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
